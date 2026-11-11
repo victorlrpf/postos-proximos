@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import MapView, { Callout, Marker, type Region } from 'react-native-maps';
 
@@ -26,27 +26,36 @@ export default function MapaScreen() {
     useStations();
 
   const mapRef = useRef<MapView>(null);
-  const regiaoAtual = useRef<Region>(REGIAO_INICIAL);
-  const [mapaProntoKey, setMapaProntoKey] = useState<string | null>(null);
+  const ultimaAreaEnquadrada = useRef<string | null>(null);
+  const [mapaPronto, setMapaPronto] = useState(false);
 
   const postosNoMapa = useMemo(() => postos.filter((p) => p.coords !== null), [postos]);
+  const chaveArea = `${local.uf}:${local.municipio}`;
   const chavePostosNoMapa = useMemo(
     () => JSON.stringify(postosNoMapa.map((posto) => posto.id).sort()),
     [postosNoMapa],
   );
-  const mapaPronto = mapaProntoKey === chavePostosNoMapa;
 
-  // Enquadra o mapa: o motorista + os postos mais próximos (ou todos, sem localização).
+  // Enquadra a cidade uma vez; mudar filtros não move a câmera.
   useEffect(() => {
-    if (!mapaPronto || postosNoMapa.length === 0) return;
+    if (
+      !mapaPronto ||
+      status !== 'pronto' ||
+      postosNoMapa.length === 0 ||
+      ultimaAreaEnquadrada.current === chaveArea
+    ) {
+      return;
+    }
+
     const pontos: Coordenadas[] = posicao
       ? [posicao, ...postosNoMapa.slice(0, QTD_MAIS_PROXIMOS).map((p) => p.coords as Coordenadas)]
       : postosNoMapa.map((p) => p.coords as Coordenadas);
+    ultimaAreaEnquadrada.current = chaveArea;
     mapRef.current?.fitToCoordinates(pontos, {
       edgePadding: { top: 120, right: 50, bottom: 220, left: 50 },
       animated: true,
     });
-  }, [chavePostosNoMapa, mapaPronto, postosNoMapa, posicao]);
+  }, [chaveArea, mapaPronto, postosNoMapa, posicao, status]);
 
   const centralizarEmMim = () => {
     if (!posicao) return;
@@ -70,76 +79,75 @@ export default function MapaScreen() {
   return (
     <View style={styles.container}>
       <MapView
-        key={chavePostosNoMapa}
         ref={mapRef}
         style={StyleSheet.absoluteFill}
         showsUserLocation={permissao === 'concedida'}
         showsMyLocationButton={false}
-        onMapReady={() => setMapaProntoKey(chavePostosNoMapa)}
-        onRegionChangeComplete={(regiao) => {
-          regiaoAtual.current = regiao;
-        }}
-        initialRegion={regiaoAtual.current}
+        onMapReady={() => setMapaPronto(true)}
+        initialRegion={REGIAO_INICIAL}
       >
-        {postosNoMapa.map((p) => (
-          <Marker
-            key={p.id}
-            coordinate={p.coords as Coordenadas}
-            title={titulo(p.nome)}
-            description={titulo(p.endereco)}
-            pinColor={p.qualificacao.nivel === 'regular' ? colors.ok : colors.warn}
-          >
-            <Callout
-              onPress={() =>
-                router.push({ pathname: '/posto/[id]', params: { id: p.id } })
-              }
+        {/* Atualiza só as anotações, sem remontar o mapa e piscar os tiles. */}
+        <Fragment key={chavePostosNoMapa}>
+          {postosNoMapa.map((p) => (
+            <Marker
+              key={p.id}
+              coordinate={p.coords as Coordenadas}
+              title={titulo(p.nome)}
+              description={titulo(p.endereco)}
+              pinColor={p.qualificacao.nivel === 'regular' ? colors.ok : colors.warn}
             >
-              <View style={styles.popup}>
-                <Text style={styles.popupNome} numberOfLines={2}>
-                  {titulo(p.nome)}
-                </Text>
-                <Text style={styles.popupEndereco} numberOfLines={2}>
-                  {titulo(p.endereco)} · {titulo(p.bairro)}
-                </Text>
-                <View style={styles.popupLinha}>
-                  <View
-                    style={[
-                      styles.popupBadge,
-                      p.qualificacao.nivel === 'regular'
-                        ? styles.popupBadgeRegular
-                        : styles.popupBadgeAtencao,
-                    ]}
-                  >
-                    <Text
+              <Callout
+                onPress={() =>
+                  router.push({ pathname: '/posto/[id]', params: { id: p.id } })
+                }
+              >
+                <View style={styles.popup}>
+                  <Text style={styles.popupNome} numberOfLines={2}>
+                    {titulo(p.nome)}
+                  </Text>
+                  <Text style={styles.popupEndereco} numberOfLines={2}>
+                    {titulo(p.endereco)} · {titulo(p.bairro)}
+                  </Text>
+                  <View style={styles.popupLinha}>
+                    <View
                       style={[
-                        styles.popupBadgeTexto,
+                        styles.popupBadge,
                         p.qualificacao.nivel === 'regular'
-                          ? styles.popupTextoRegular
-                          : styles.popupTextoAtencao,
+                          ? styles.popupBadgeRegular
+                          : styles.popupBadgeAtencao,
                       ]}
                     >
-                      {p.qualificacao.nivel === 'regular' ? 'Regular na ANP' : 'Atenção'}
-                    </Text>
+                      <Text
+                        style={[
+                          styles.popupBadgeTexto,
+                          p.qualificacao.nivel === 'regular'
+                            ? styles.popupTextoRegular
+                            : styles.popupTextoAtencao,
+                        ]}
+                      >
+                        {p.qualificacao.nivel === 'regular' ? 'Regular na ANP' : 'Atenção'}
+                      </Text>
+                    </View>
+                    {p.distanciaKm !== null ? (
+                      <Text style={styles.popupDistancia}>{formatarDistancia(p.distanciaKm)}</Text>
+                    ) : null}
                   </View>
-                  {p.distanciaKm !== null ? (
-                    <Text style={styles.popupDistancia}>{formatarDistancia(p.distanciaKm)}</Text>
-                  ) : null}
+                  <Text style={styles.popupEndereco} numberOfLines={1}>
+                    {p.bandeiraBranca ? 'Bandeira branca' : titulo(p.bandeira)} · {p.totalBicos}{' '}
+                    {p.totalBicos === 1 ? 'bico' : 'bicos'}
+                  </Text>
+                  <Text style={styles.popupCombustiveis} numberOfLines={2}>
+                    {p.categorias.map(labelCategoria).join(' · ')}
+                  </Text>
+                  <View style={styles.popupDetalhes}>
+                    <Text style={styles.popupDetalhesTexto}>Toque para ver detalhes</Text>
+                    <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+                  </View>
                 </View>
-                <Text style={styles.popupEndereco} numberOfLines={1}>
-                  {p.bandeiraBranca ? 'Bandeira branca' : titulo(p.bandeira)} · {p.totalBicos}{' '}
-                  {p.totalBicos === 1 ? 'bico' : 'bicos'}
-                </Text>
-                <Text style={styles.popupCombustiveis} numberOfLines={2}>
-                  {p.categorias.map(labelCategoria).join(' · ')}
-                </Text>
-                <View style={styles.popupDetalhes}>
-                  <Text style={styles.popupDetalhesTexto}>Toque para ver detalhes</Text>
-                  <Ionicons name="chevron-forward" size={14} color={colors.primary} />
-                </View>
-              </View>
-            </Callout>
-          </Marker>
-        ))}
+              </Callout>
+            </Marker>
+          ))}
+        </Fragment>
       </MapView>
 
       <View style={styles.topo} pointerEvents="box-none">
