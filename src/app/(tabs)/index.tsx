@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
-import MapView, { Callout, Marker } from 'react-native-maps';
+import MapView, { Callout, Marker, type Region } from 'react-native-maps';
 
 import { FilterBar } from '../../components/FilterBar';
 import { StatusView } from '../../components/StatusView';
@@ -14,15 +14,27 @@ import { formatarDistancia } from '../../utils/geo';
 import { titulo } from '../../utils/text';
 
 const QTD_MAIS_PROXIMOS = 10;
+const REGIAO_INICIAL: Region = {
+  latitude: -22.7375,
+  longitude: -47.3331,
+  latitudeDelta: 0.15,
+  longitudeDelta: 0.15,
+};
 
 export default function MapaScreen() {
   const { postos, posicao, permissao, status, erro, recarregar, local, semCoordenadas, totalPostos } =
     useStations();
 
   const mapRef = useRef<MapView>(null);
-  const [mapaPronto, setMapaPronto] = useState(false);
+  const regiaoAtual = useRef<Region>(REGIAO_INICIAL);
+  const [mapaProntoKey, setMapaProntoKey] = useState<string | null>(null);
 
   const postosNoMapa = useMemo(() => postos.filter((p) => p.coords !== null), [postos]);
+  const chavePostosNoMapa = useMemo(
+    () => JSON.stringify(postosNoMapa.map((posto) => posto.id).sort()),
+    [postosNoMapa],
+  );
+  const mapaPronto = mapaProntoKey === chavePostosNoMapa;
 
   // Enquadra o mapa: o motorista + os postos mais próximos (ou todos, sem localização).
   useEffect(() => {
@@ -34,7 +46,7 @@ export default function MapaScreen() {
       edgePadding: { top: 120, right: 50, bottom: 220, left: 50 },
       animated: true,
     });
-  }, [mapaPronto, postosNoMapa, posicao]);
+  }, [chavePostosNoMapa, mapaPronto, postosNoMapa, posicao]);
 
   const centralizarEmMim = () => {
     if (!posicao) return;
@@ -58,17 +70,16 @@ export default function MapaScreen() {
   return (
     <View style={styles.container}>
       <MapView
+        key={chavePostosNoMapa}
         ref={mapRef}
         style={StyleSheet.absoluteFill}
         showsUserLocation={permissao === 'concedida'}
         showsMyLocationButton={false}
-        onMapReady={() => setMapaPronto(true)}
-        initialRegion={{
-          latitude: -22.7375,
-          longitude: -47.3331,
-          latitudeDelta: 0.15,
-          longitudeDelta: 0.15,
+        onMapReady={() => setMapaProntoKey(chavePostosNoMapa)}
+        onRegionChangeComplete={(regiao) => {
+          regiaoAtual.current = regiao;
         }}
+        initialRegion={regiaoAtual.current}
       >
         {postosNoMapa.map((p) => (
           <Marker
