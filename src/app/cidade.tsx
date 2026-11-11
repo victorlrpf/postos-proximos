@@ -23,6 +23,11 @@ import { ESTADOS_BRASIL } from '../utils/uf';
 type MunicipioIbge = { id: number; nome: string };
 type TipoSeletor = 'estado' | 'cidade';
 
+function voltarParaOrigem() {
+  if (router.canGoBack()) router.back();
+  else router.replace('/');
+}
+
 export default function CidadeModal() {
   const { local, definirLocal, usarMinhaLocalizacao } = useStations();
   const [municipio, setMunicipio] = useState(titulo(local.municipio));
@@ -105,7 +110,7 @@ export default function CidadeModal() {
       return;
     }
     definirLocal({ uf, municipio });
-    router.back();
+    voltarParaOrigem();
   };
 
   const abrirSeletor = (tipo: TipoSeletor) => {
@@ -133,7 +138,7 @@ export default function CidadeModal() {
     setMensagem(null);
     const ok = await usarMinhaLocalizacao();
     setLocalizando(false);
-    if (ok) router.back();
+    if (ok) voltarParaOrigem();
     else setMensagem('Não consegui descobrir sua cidade. Verifique a permissão de localização.');
   };
 

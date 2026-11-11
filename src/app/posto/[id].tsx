@@ -10,6 +10,11 @@ import { colors, radius, shadow } from '../../theme';
 import { formatarDistancia, urlRota } from '../../utils/geo';
 import { titulo } from '../../utils/text';
 
+function voltarParaOrigem() {
+  if (router.canGoBack()) router.back();
+  else router.replace('/');
+}
+
 const formatarCnpj = (cnpj: string): string =>
   cnpj.length === 14
     ? cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5')
@@ -39,7 +44,7 @@ export default function PostoScreen() {
         tipo="vazio"
         titulo="Posto não encontrado"
         detalhe="Ele pode ter saído da lista após uma atualização dos dados."
-        acao={{ texto: 'Voltar', onPress: () => router.back() }}
+        acao={{ texto: 'Voltar', onPress: voltarParaOrigem }}
       />
     );
   }
