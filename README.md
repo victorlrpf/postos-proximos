@@ -22,7 +22,8 @@ registros reais da ANP).
 
 ## O que o app faz
 
-- Detecta a cidade pelo GPS (ou usa a cidade escolhida manualmente; padrão: Americana/SP).
+- Detecta a cidade pelo GPS (ou permite escolher estado e cidade em listas oficiais do IBGE;
+  padrão: Americana/SP).
 - **Mapa**: marcadores verdes (regular) e laranjas (atenção); toque abre um popup com informações
   do posto, e toque no popup para acessar os detalhes completos.
 - **Lista**: busca por nome/bairro/bandeira, filtros por combustível (Gasolina, Etanol, Diesel,
