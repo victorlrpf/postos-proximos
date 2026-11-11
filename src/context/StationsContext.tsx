@@ -58,7 +58,7 @@ interface StationsContextValue {
 
 const FILTROS_INICIAIS: Filtros = {
   categorias: [],
-  apenasRegulares: false,
+  situacao: 'todas',
   ordenacao: 'distancia',
   busca: '',
 };
@@ -237,7 +237,7 @@ export function StationsProvider({ children }: { children: ReactNode }) {
     const busca = normalizar(filtros.busca);
     const lista = comDistancia.filter((p) => {
       if (!filtros.categorias.every((c) => p.categorias.includes(c))) return false;
-      if (filtros.apenasRegulares && p.qualificacao.nivel !== 'regular') return false;
+      if (filtros.situacao !== 'todas' && p.qualificacao.nivel !== filtros.situacao) return false;
       if (busca) {
         const texto = normalizar(`${p.nome} ${p.bairro} ${p.endereco} ${p.bandeira}`);
         if (!texto.includes(busca)) return false;

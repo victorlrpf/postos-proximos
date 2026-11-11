@@ -136,10 +136,11 @@ export interface Local {
 }
 
 export type Ordenacao = 'distancia' | 'bicos';
+export type SituacaoFiltro = 'todas' | 'regular' | 'atencao';
 
 export interface Filtros {
   categorias: Categoria[];
-  apenasRegulares: boolean;
+  situacao: SituacaoFiltro;
   ordenacao: Ordenacao;
   busca: string;
 }

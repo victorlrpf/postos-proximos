@@ -69,8 +69,18 @@ export function FilterBar({ mostrarBusca = false }: { mostrarBusca?: boolean }) 
         <Chip
           texto="Só regulares"
           icone="shield-checkmark"
-          ativo={filtros.apenasRegulares}
-          onPress={() => atualizarFiltros({ apenasRegulares: !filtros.apenasRegulares })}
+          ativo={filtros.situacao === 'regular'}
+          onPress={() =>
+            atualizarFiltros({ situacao: filtros.situacao === 'regular' ? 'todas' : 'regular' })
+          }
+        />
+        <Chip
+          texto="Com alertas ANP"
+          icone="alert-circle"
+          ativo={filtros.situacao === 'atencao'}
+          onPress={() =>
+            atualizarFiltros({ situacao: filtros.situacao === 'atencao' ? 'todas' : 'atencao' })
+          }
         />
         {mostrarBusca ? (
           <Chip

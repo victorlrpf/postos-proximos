@@ -26,7 +26,7 @@ registros reais da ANP).
 - **Mapa**: marcadores verdes (regular) e laranjas (atenção); toque abre um popup com informações
   do posto, e toque no popup para acessar os detalhes completos.
 - **Lista**: busca por nome/bairro/bandeira, filtros por combustível (Gasolina, Etanol, Diesel,
-  GNV), "Só regulares" e ordenação por distância ou número de bicos.
+  GNV), situação regular ou com alertas registrados na ANP e ordenação por distância ou número de bicos.
 - **Gás (GLP)**: revendedores de gás de cozinha, com rota pelo endereço.
 - **Detalhes**: produtos, bicos, tancagem, situação cadastral, observações da fiscalização.
 - Cache local de 12 h (funciona offline com o último dado salvo).
